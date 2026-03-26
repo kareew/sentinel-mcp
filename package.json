@@ -1,0 +1,41 @@
+{
+  "name": "@kareem/sentinel-mcp",
+  "version": "1.0.0",
+  "description": "Security Operations MCP Server — turns AI agents into security analysts. Scan HTTP headers, analyze SSL/TLS, enumerate DNS, fingerprint tech stacks, and generate full security reports.",
+  "type": "module",
+  "bin": {
+    "sentinel-mcp": "./bin/sentinel-mcp.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "security",
+    "cybersecurity",
+    "claude",
+    "ai-agent",
+    "penetration-testing",
+    "security-audit",
+    "ssl",
+    "dns",
+    "http-security",
+    "mitre-attack",
+    "vulnerability-scanner"
+  ],
+  "author": "Kareem Mahmoud",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
