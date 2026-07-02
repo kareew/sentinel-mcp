@@ -1,0 +1,58 @@
+name: Render full video
+
+on:
+  push:
+    branches: [claude/office-corridor-seedance-g14esp]
+    paths: ['.github/workflows/render-full-video.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Download clips
+        run: |
+          set -euo pipefail
+          mkdir -p work
+          curl -fsSL --retry 3 -o work/raw_1.mp4 "https://d8j0ntlcm91z4.cloudfront.net/user_2wk7uXGMIaZ3MOPyoah76vZPwNx/hf_20260702_013441_e3585152-58d4-49e8-ac62-906aca7b9ef2.mp4"
+          curl -fsSL --retry 3 -o work/raw_2.mp4 "https://d8j0ntlcm91z4.cloudfront.net/user_2wk7uXGMIaZ3MOPyoah76vZPwNx/hf_20260702_013446_468242de-63bb-40c1-9fee-a2c8e791a948.mp4"
+
+      - name: Normalize and concat
+        run: |
+          set -euo pipefail
+          cd work
+          for i in 1 2; do
+            if ffprobe -v error -select_streams a -show_entries stream=codec_type -of csv=p=0 "raw_$i.mp4" | grep -q audio; then
+              ffmpeg -y -i "raw_$i.mp4" \
+                -vf "scale=854:480,fps=24,setsar=1" \
+                -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p \
+                -c:a aac -ar 44100 -ac 2 "norm_$i.mp4"
+            else
+              ffmpeg -y -i "raw_$i.mp4" -f lavfi -i anullsrc=r=44100:cl=stereo \
+                -map 0:v -map 1:a -shortest \
+                -vf "scale=854:480,fps=24,setsar=1" \
+                -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p \
+                -c:a aac -ar 44100 -ac 2 "norm_$i.mp4"
+            fi
+          done
+          # Final second: black screen, silence, hard stop
+          ffmpeg -y -f lavfi -i color=black:s=854x480:r=24 -f lavfi -i anullsrc=r=44100:cl=stereo \
+            -t 1 -c:v libx264 -preset fast -crf 20 -pix_fmt yuv420p \
+            -c:a aac -ar 44100 -ac 2 norm_3.mp4
+          for i in 1 2 3; do echo "file 'norm_$i.mp4'" >> list.txt; done
+          ffmpeg -y -f concat -safe 0 -i list.txt -c copy ../thriller_full.mp4
+
+      - name: Commit result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add thriller_full.mp4
+          git commit -m "Add rendered full video"
+          git push
